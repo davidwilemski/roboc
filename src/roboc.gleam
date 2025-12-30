@@ -8,41 +8,24 @@ import glenvy/env
 import glint
 import in
 import roboc/client
-
-pub type Source {
-  User
-  Assistant
-}
-
-pub type Context {
-  Context(lines: List(#(Source, String)))
-}
-
-fn context_to_string(ctx: Context) -> String {
-  string.join(
-    list.map(ctx.lines, fn(ln) {
-      let #(src, str) = ln
-      string.inspect(src) <> ": " <> str
-    }),
-    "\n",
-  )
-}
+import roboc/context
 
 // returns both the agent's response + the context (with the response appended)
 fn agent_loop(
   clnt: client.Client,
-  ctx: Context,
-) -> Result(#(String, Context), String) {
-  use resp <- result.try(client.send(clnt, context_to_string(ctx)))
+  ctx: context.Context,
+) -> Result(#(String, context.Context), String) {
+  use resp <- result.try(client.send(clnt, context.to_string(ctx)))
   io.println(client.format_meta_line(resp.meta))
   io.println(resp.message)
   io.print_error(">>> ")
   case in.read_line() {
     Ok(line) -> {
       let new_ctx =
-        Context(
-          list.append(ctx.lines, [#(Assistant, resp.message), #(User, line)]),
-        )
+        context.append(ctx, [
+          #(context.Assistant, resp.message),
+          #(context.User, line),
+        ])
       agent_loop(clnt, new_ctx)
     }
     Error(err) -> {
@@ -55,15 +38,12 @@ fn roboc() -> glint.Command(Nil) {
   use <- glint.command_help("Runs basic roboc agent")
   use _, _, _ <- glint.command()
 
-  let initial_prompt =
-    "Hi Claude, please respond with a random programming language's basic print function with the text 'Hello, from roboc'"
-
   case get_api_key() {
     Ok(key) -> {
       io.println("Hello from roboc!")
 
       let client = client.new(key)
-      let init_ctx = Context([#(User, initial_prompt)])
+      let init_ctx = context.new()
 
       case agent_loop(client, init_ctx) {
         Ok(#(msg, _)) -> {
