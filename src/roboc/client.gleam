@@ -1,6 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string
+import gleam/int
 import openrouter_client
 import openrouter_client/internal
 import roboc/format
@@ -31,14 +32,10 @@ pub fn send(client: Client, content: String) -> Result(Response, String) {
   let response = openrouter_client.send(client.c, content)
   case response {
     Ok(resp) ->
-      Ok(
-        Response(string.join(
-          list.map(resp.choices, fn(c) { c.message.content }),
-          "\n",
-        ),
-      ResponseMetadata(resp.provider, resp.usage.total_tokens)
-    ),
-      )
+      Ok(Response(
+        string.join(list.map(resp.choices, fn(c) { c.message.content }), "\n"),
+        ResponseMetadata(resp.provider, resp.usage.total_tokens),
+      ))
     Error(e) -> Error(openrouter_error_to_string(e))
   }
 }
@@ -54,4 +51,9 @@ fn openrouter_error_to_string(e: internal.OpenrouterError) -> String {
       "json response decode error: " <> format.json_decode_error_to_string(e)
     _ -> "unknown error"
   }
+}
+
+pub fn format_meta_line(meta: ResponseMetadata) -> String {
+  "provider: " <> meta.provider
+  " usage (tokens): " <> int.to_string(meta.total_tokens)
 }

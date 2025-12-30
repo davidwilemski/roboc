@@ -1,31 +1,75 @@
 import argv
 import gleam/int
 import gleam/io
+import gleam/list
 import gleam/result
+import gleam/string
 import glenvy/env
 import glint
+import in
 import roboc/client
+
+pub type Source {
+  User
+  Assistant
+}
+
+pub type Context {
+  Context(lines: List(#(Source, String)))
+}
+
+fn context_to_string(ctx: Context) -> String {
+  string.join(
+    list.map(ctx.lines, fn(ln) {
+      let #(src, str) = ln
+      string.inspect(src) <> ": " <> str
+    }),
+    "\n",
+  )
+}
+
+// returns both the agent's response + the context (with the response appended)
+fn agent_loop(
+  clnt: client.Client,
+  ctx: Context,
+) -> Result(#(String, Context), String) {
+  use resp <- result.try(client.send(clnt, context_to_string(ctx)))
+  io.println(client.format_meta_line(resp.meta))
+  io.println(resp.message)
+  io.print_error(">>> ")
+  case in.read_line() {
+    Ok(line) -> {
+      let new_ctx =
+        Context(
+          list.append(ctx.lines, [#(Assistant, resp.message), #(User, line)]),
+        )
+      agent_loop(clnt, new_ctx)
+    }
+    Error(err) -> {
+      Error(string.inspect(err))
+    }
+  }
+}
 
 fn roboc() -> glint.Command(Nil) {
   use <- glint.command_help("Runs basic roboc agent")
   use _, _, _ <- glint.command()
 
+  let initial_prompt =
+          "Hi Claude, please respond with a random programming language's basic print function with the text 'Hello, from roboc'"
+
   case get_api_key() {
     Ok(key) -> {
-      let client = client.new(key)
       io.println("Hello from roboc!")
-      let response =
-        client.send(
-          client,
-          "Hi Claude, please respond with a random programming language's basic print function with the text 'Hello, from roboc'",
-        )
-      case response {
-        Ok(resp) -> {
-          io.println("provider: " <> resp.meta.provider)
-          io.println(
-            "usage (tokens): " <> int.to_string(resp.meta.total_tokens),
-          )
-          io.println(resp.message)
+
+      let client = client.new(key)
+      let init_ctx = Context([#(User, initial_prompt)])
+
+      case agent_loop(client, init_ctx) {
+        Ok(#(msg, _)) -> {
+          // print last response
+      io.println(msg)
+      io.println("Ending session!")
         }
         Error(e) -> io.println(e)
       }
