@@ -1,7 +1,7 @@
+import gleam/int
 import gleam/list
 import gleam/option
 import gleam/string
-import gleam/int
 import openrouter_client
 import openrouter_client/internal
 import roboc/format
@@ -12,7 +12,11 @@ pub type Client {
 }
 
 pub type ResponseMetadata {
-  ResponseMetadata(provider: String, total_tokens: Int)
+  ResponseMetadata(provider: String, usage: Usage)
+}
+
+pub type Usage {
+  Usage(in: Int, out: Int, total: Int)
 }
 
 pub type Response {
@@ -34,7 +38,14 @@ pub fn send(client: Client, content: String) -> Result(Response, String) {
     Ok(resp) ->
       Ok(Response(
         string.join(list.map(resp.choices, fn(c) { c.message.content }), "\n"),
-        ResponseMetadata(resp.provider, resp.usage.total_tokens),
+        ResponseMetadata(
+          resp.provider,
+          Usage(
+            resp.usage.prompt_tokens,
+            resp.usage.completion_tokens,
+            resp.usage.total_tokens,
+          ),
+        ),
       ))
     Error(e) -> Error(openrouter_error_to_string(e))
   }
@@ -54,6 +65,19 @@ fn openrouter_error_to_string(e: internal.OpenrouterError) -> String {
 }
 
 pub fn format_meta_line(meta: ResponseMetadata) -> String {
-  "provider: " <> meta.provider
-  " usage (tokens): " <> int.to_string(meta.total_tokens)
+  let usage =
+    string.join(
+      list.map(
+        [
+          meta.usage.in,
+          meta.usage.out,
+          meta.usage.total,
+        ],
+        int.to_string,
+      ),
+      "/",
+    )
+
+  "provider: " <> meta.provider <>
+  " usage (tokens in/out/total): " <> usage
 }

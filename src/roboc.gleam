@@ -56,7 +56,7 @@ fn roboc() -> glint.Command(Nil) {
   use _, _, _ <- glint.command()
 
   let initial_prompt =
-          "Hi Claude, please respond with a random programming language's basic print function with the text 'Hello, from roboc'"
+    "Hi Claude, please respond with a random programming language's basic print function with the text 'Hello, from roboc'"
 
   case get_api_key() {
     Ok(key) -> {
@@ -68,8 +68,8 @@ fn roboc() -> glint.Command(Nil) {
       case agent_loop(client, init_ctx) {
         Ok(#(msg, _)) -> {
           // print last response
-      io.println(msg)
-      io.println("Ending session!")
+          io.println(msg)
+          io.println("Ending session!")
         }
         Error(e) -> io.println(e)
       }
