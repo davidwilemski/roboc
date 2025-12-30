@@ -21,7 +21,7 @@ fn agent_loop(
         context.append(ctx, [
           #(context.User, line),
         ])
-      use resp <- result.try(client.send(clnt, context.to_string(new_ctx)))
+      use resp <- result.try(client.send(clnt, new_ctx))
       io.println(client.format_meta_line(resp.meta))
       io.println(resp.message)
       agent_loop(

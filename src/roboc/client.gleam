@@ -1,14 +1,14 @@
 import gleam/int
 import gleam/list
-import gleam/option
 import gleam/string
-import openrouter_client
-import openrouter_client/internal
+import roboc/context
 import roboc/format
+import roboc/openrouter/client
+import roboc/openrouter/types
 
 // wraps openrouter
 pub type Client {
-  Client(c: openrouter_client.Client)
+  Client(client: client.Client)
 }
 
 pub type ResponseMetadata {
@@ -29,11 +29,12 @@ pub type ClientError {
 
 pub fn new(key: String) -> Client {
   // TODO allow system prompt
-  Client(openrouter_client.new(key, "anthropic/claude-sonnet-4.5", option.None))
+  Client(client.new(key, "anthropic/claude-sonnet-4.5"))
 }
 
-pub fn send(client: Client, content: String) -> Result(Response, String) {
-  let response = openrouter_client.send(client.c, content)
+pub fn send(client: Client, ctx: context.Context) -> Result(Response, String) {
+  let messages = ctx_to_messages(ctx)
+  let response = client.chat(client.client, messages)
   case response {
     Ok(resp) ->
       Ok(Response(
@@ -51,17 +52,25 @@ pub fn send(client: Client, content: String) -> Result(Response, String) {
   }
 }
 
-fn openrouter_error_to_string(e: internal.OpenrouterError) -> String {
+fn openrouter_error_to_string(e: types.OpenrouterError) -> String {
   case e {
-    internal.InvalidApiKey -> "Invalid API Key"
-    internal.InvalidResponse -> "Invalid response"
-    internal.NoCreditsLeft -> "No credits left"
-    internal.HttpRequestError(e) -> "Request error: " <> e
-    internal.EmptyResponse -> "Empty response"
-    internal.DecodeError(e) ->
+    types.InvalidApiKey -> "Invalid API Key"
+    types.InvalidResponse -> "Invalid response"
+    types.NoCreditsLeft -> "No credits left"
+    types.HttpRequestError(e) -> "Request error: " <> e
+    types.EmptyResponse -> "Empty response"
+    types.DecodeError(e) ->
       "json response decode error: " <> format.json_decode_error_to_string(e)
     _ -> "unknown error"
   }
+}
+
+fn ctx_to_messages(ctx: context.Context) -> List(client.RequestMessage) {
+  ctx.lines
+  |> list.map(fn(l) {
+    let #(r, m) = l
+    client.RequestMessage(role_to_string(r), m)
+  })
 }
 
 pub fn format_meta_line(meta: ResponseMetadata) -> String {
@@ -79,4 +88,8 @@ pub fn format_meta_line(meta: ResponseMetadata) -> String {
     )
 
   "provider: " <> meta.provider <> " usage (tokens in/out/total): " <> usage
+}
+
+pub fn role_to_string(role: context.Role) -> String {
+  role |> string.inspect |> string.lowercase
 }
