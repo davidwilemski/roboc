@@ -1,5 +1,4 @@
 import argv
-import gleam/int
 import gleam/io
 import gleam/list
 import gleam/result
@@ -16,7 +15,7 @@ fn agent_loop(
   ctx: context.Context,
 ) -> Result(#(String, context.Context), String) {
   io.print_error(">>> ")
-  case in.read_line() {
+  case read_lines() {
     Ok(line) -> {
       let new_ctx =
         context.append(ctx, [
@@ -25,10 +24,13 @@ fn agent_loop(
       use resp <- result.try(client.send(clnt, context.to_string(new_ctx)))
       io.println(client.format_meta_line(resp.meta))
       io.println(resp.message)
-      agent_loop(clnt, context.append(new_ctx, [#(context.Assistant, resp.message)]))
+      agent_loop(
+        clnt,
+        context.append(new_ctx, [#(context.Assistant, resp.message)]),
+      )
     }
-    Error(err) -> {
-      Error(string.inspect(err))
+    Error(_) -> {
+      Error("")
     }
   }
 }
@@ -72,4 +74,17 @@ fn get_api_key() -> Result(String, String) {
       env.FailedToParse(s) -> "Error parsing env var: " <> s
     }
   })
+}
+
+fn read_lines() -> Result(String, String) {
+  use lines <- result.map(read_lines_internal([]))
+  lines |> string.join("\n")
+}
+
+fn read_lines_internal(lines: List(String)) -> Result(List(String), String) {
+  case in.read_line() {
+    Ok(line) if line == "\n" -> Ok(lines)
+    Ok(line) -> read_lines_internal(list.append(lines, [line]))
+    Error(e) -> Error(string.inspect(e))
+  }
 }
