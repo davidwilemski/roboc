@@ -15,18 +15,17 @@ fn agent_loop(
   clnt: client.Client,
   ctx: context.Context,
 ) -> Result(#(String, context.Context), String) {
-  use resp <- result.try(client.send(clnt, context.to_string(ctx)))
-  io.println(client.format_meta_line(resp.meta))
-  io.println(resp.message)
   io.print_error(">>> ")
   case in.read_line() {
     Ok(line) -> {
       let new_ctx =
         context.append(ctx, [
-          #(context.Assistant, resp.message),
           #(context.User, line),
         ])
-      agent_loop(clnt, new_ctx)
+      use resp <- result.try(client.send(clnt, context.to_string(new_ctx)))
+      io.println(client.format_meta_line(resp.meta))
+      io.println(resp.message)
+      agent_loop(clnt, context.append(new_ctx, [#(context.Assistant, resp.message)]))
     }
     Error(err) -> {
       Error(string.inspect(err))
