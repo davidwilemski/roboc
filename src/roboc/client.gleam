@@ -78,6 +78,5 @@ pub fn format_meta_line(meta: ResponseMetadata) -> String {
       "/",
     )
 
-  "provider: " <> meta.provider <>
-  " usage (tokens in/out/total): " <> usage
+  "provider: " <> meta.provider <> " usage (tokens in/out/total): " <> usage
 }
