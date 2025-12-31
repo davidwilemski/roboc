@@ -1,15 +1,16 @@
 import gleam/list
 import gleam/option
 import gleam/string
+import roboc/openrouter/types
 
-pub type Role {
-  User
-  Assistant
-  System
+pub type Message {
+  UserMsg(content: String)
+  AssistantMsg(content: String, tool_calls: option.Option(List(types.ToolCall)))
+  SystemMsg(content: String)
 }
 
 pub type Context {
-  Context(lines: List(#(Role, String)))
+  Context(lines: List(Message))
 }
 
 pub fn new() -> Context {
@@ -18,21 +19,11 @@ pub fn new() -> Context {
 
 pub fn new_with_system_prompt(system_prompt: option.Option(String)) -> Context {
   let prompt = option.unwrap(system_prompt, default_system_prompt)
-  Context([#(System, prompt)])
+  Context([SystemMsg(prompt)])
 }
 
-pub fn append(ctx: Context, messages: List(#(Role, String))) -> Context {
+pub fn append(ctx: Context, messages: List(Message)) -> Context {
   Context(list.append(ctx.lines, messages))
-}
-
-pub fn to_string(ctx: Context) -> String {
-  string.join(
-    list.map(ctx.lines, fn(ln) {
-      let #(src, str) = ln
-      string.inspect(src) <> ": " <> str
-    }),
-    "\n",
-  )
 }
 
 // TODO Improve

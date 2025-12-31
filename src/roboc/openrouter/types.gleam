@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/dynamic/decode
 import gleam/json
 import gleam/option
@@ -17,10 +18,19 @@ pub type OpenrouterResponse {
   )
 }
 
+pub type FinishReason {
+  Stop
+  ToolCalls
+  Length
+  ContentFilter
+  ErrorReason
+  Unknown(String)
+}
+
 pub type Choice {
   Choice(
     logprobs: option.Option(LogProbs),
-    finish_reason: String,
+    finish_reason: FinishReason,
     index: Int,
     message: Message,
   )
@@ -30,8 +40,17 @@ pub type LogProbs {
   LogProbs(content: List(String), refusal: List(String))
 }
 
+pub type ToolCall {
+  FunctionCall(id: String, name: String, arguments: String)
+}
+
 pub type Message {
-  Message(role: String, content: String, refusal: option.Option(String))
+  Message(
+    role: String,
+    content: String,
+    refusal: option.Option(String),
+    tool_calls: option.Option(List(ToolCall)),
+  )
 }
 
 pub type Usage {
@@ -66,16 +85,52 @@ pub fn decode_openrouter_response(
     decode.success(LogProbs(content:, refusal:))
   }
 
+  let tool_call_decoder = {
+    use t <- decode.field("type", decode.string)
+    case t {
+      "function" -> {
+        use id <- decode.field("id", decode.string)
+        use name <- decode.subfield(["function", "name"], decode.string)
+        use arguments <- decode.subfield(
+          ["function", "arguments"],
+          decode.string,
+        )
+        decode.success(FunctionCall(id:, name:, arguments:))
+      }
+      _ ->
+        decode.failure(
+          FunctionCall("", "", ""),
+          "unexpected tool call type: " <> t,
+        )
+    }
+  }
+
   let message_decoder = {
     use role <- decode.field("role", decode.string)
     use content <- decode.field("content", decode.string)
     use refusal <- decode.field("refusal", decode.optional(decode.string))
-    decode.success(Message(role:, content:, refusal:))
+    use tool_calls <- decode.field(
+      "tool_calls",
+      decode.optional(decode.list(tool_call_decoder)),
+    )
+    decode.success(Message(role:, content:, refusal:, tool_calls:))
+  }
+
+  let finish_reason_decoder = {
+    use finish_reason_str <- decode.then(decode.string)
+    case finish_reason_str {
+      "stop" -> decode.success(Stop)
+      "tool_calls" -> decode.success(ToolCalls)
+      "length" -> decode.success(Length)
+      "content_filter" -> decode.success(ContentFilter)
+      "error" -> decode.success(ErrorReason)
+      _ -> decode.success(Unknown(finish_reason_str))
+    }
   }
 
   let choice_decoder = {
     use logprobs <- decode.field("logprobs", decode.optional(logprobs_decoder))
-    use finish_reason <- decode.field("finish_reason", decode.string)
+    use finish_reason <- decode.field("finish_reason", finish_reason_decoder)
     use index <- decode.field("index", decode.int)
     use message <- decode.field("message", message_decoder)
     decode.success(Choice(logprobs:, finish_reason:, index:, message:))

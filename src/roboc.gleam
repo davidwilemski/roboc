@@ -1,6 +1,7 @@
 import argv
 import gleam/io
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/string
 import glenvy/env
@@ -19,14 +20,19 @@ fn agent_loop(
     Ok(line) -> {
       let new_ctx =
         context.append(ctx, [
-          #(context.User, line),
+          context.UserMsg(line),
         ])
       use resp <- result.try(client.send(clnt, new_ctx))
+      io.println_error("tool calls: " <> string.inspect(resp.tool_calls))
       io.println(client.format_meta_line(resp.meta))
       io.println(resp.message)
+      let tool_calls = case list.length(resp.tool_calls) {
+        0 -> option.None
+        _ -> option.Some(resp.tool_calls)
+      }
       agent_loop(
         clnt,
-        context.append(new_ctx, [#(context.Assistant, resp.message)]),
+        context.append(new_ctx, [context.AssistantMsg(resp.message, tool_calls)]),
       )
     }
     Error(_) -> {
