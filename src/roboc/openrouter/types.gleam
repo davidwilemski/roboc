@@ -1,7 +1,6 @@
-import gleam/io
 import gleam/dynamic/decode
 import gleam/json
-import gleam/option
+import gleam/option.{type Option, None}
 import gleam/result
 
 // originally taken from https://codeberg.org/Cmooon/openrouter_client but modified a good bit (updated to gleam_json v3, made it work against the current API by adding optional/null handling, and more types)
@@ -29,7 +28,7 @@ pub type FinishReason {
 
 pub type Choice {
   Choice(
-    logprobs: option.Option(LogProbs),
+    logprobs: Option(LogProbs),
     finish_reason: FinishReason,
     index: Int,
     message: Message,
@@ -44,12 +43,28 @@ pub type ToolCall {
   FunctionCall(id: String, name: String, arguments: String)
 }
 
+pub fn tool_call_to_json(tool_call: ToolCall) -> json.Json {
+  let FunctionCall(id:, name:, arguments:) = tool_call
+  json.object([
+    #("id", json.string(id)),
+    #("type", json.string("function")),
+    #(
+      "function",
+      json.object([
+        #("name", json.string(name)),
+        #("arguments", json.string(arguments)),
+      ]),
+    ),
+  ])
+}
+
 pub type Message {
   Message(
     role: String,
     content: String,
-    refusal: option.Option(String),
-    tool_calls: option.Option(List(ToolCall)),
+    refusal: Option(String),
+    tool_calls: Option(List(ToolCall)),
+    reasoning: Option(String),
   )
 }
 
@@ -109,11 +124,14 @@ pub fn decode_openrouter_response(
     use role <- decode.field("role", decode.string)
     use content <- decode.field("content", decode.string)
     use refusal <- decode.field("refusal", decode.optional(decode.string))
-    use tool_calls <- decode.field(
+    use tool_calls <- decode.optional_field(
       "tool_calls",
+      None,
       decode.optional(decode.list(tool_call_decoder)),
     )
-    decode.success(Message(role:, content:, refusal:, tool_calls:))
+    use reasoning <- decode.field("reasoning", decode.optional(decode.string))
+    // echo reasoning
+    decode.success(Message(role:, content:, refusal:, tool_calls:, reasoning:))
   }
 
   let finish_reason_decoder = {

@@ -69,8 +69,17 @@ fn encode_message(message: context.Message) -> json.Json {
   let specialized_fields = case message {
     context.UserMsg(_) -> [#("role", json.string("user"))]
     context.SystemMsg(_) -> [#("role", json.string("system"))]
-    context.AssistantMsg(_, option.Some(tool_calls)) -> [#("role", json.string("assistant"))]
-    _ -> []
+    context.AssistantMsg(_, Some(tool_calls)) -> {
+      [
+        #("role", json.string("assistant")),
+        #("tool_calls", json.array(tool_calls, types.tool_call_to_json)),
+      ]
+    }
+    context.AssistantMsg(_, None) -> []
+    context.ToolRespMsg(_, tool_call_id) -> [
+      #("role", json.string("tool")),
+      #("tool_call_id", json.string(tool_call_id)),
+    ]
   }
   json.object(list.append(common_fields, specialized_fields))
 }

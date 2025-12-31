@@ -1,12 +1,12 @@
 import gleam/list
 import gleam/option
-import gleam/string
 import roboc/openrouter/types
 
 pub type Message {
   UserMsg(content: String)
   AssistantMsg(content: String, tool_calls: option.Option(List(types.ToolCall)))
   SystemMsg(content: String)
+  ToolRespMsg(content: String, tool_call_id: String)
 }
 
 pub type Context {
