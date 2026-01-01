@@ -91,14 +91,7 @@ fn handle_tool_calls(tool_calls: List(types.ToolCall)) -> List(context.Message) 
       "calling tool: " <> t.name <> " with args: " <> t.arguments,
     )
     let content = case tools.handle_tool(t) {
-      Ok(c) -> {
-        io.println_error("tool call output :")
-        string.split(c, "\n")
-        |> list.take(15)
-        |> string.join("\n")
-        |> io.print_error
-        c
-      }
+      Ok(c) -> c
       Error(e) -> {
         io.println_error("Error in tool call: " <> e)
         "Error in tool call: " <> e
