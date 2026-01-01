@@ -33,6 +33,7 @@ packages = [
 [requirements]
 argv = { version = ">= 1.0.2 and < 2.0.0" }
 child_process = { version = ">= 1.1.1 and < 2.0.0" }
+filepath = { version = ">= 1.1.2 and < 2.0.0" }
 gleam_http = { version = ">= 4.3.0 and < 5.0.0" }
 gleam_httpc = { version = ">= 5.0.0 and < 6.0.0" }
 gleam_json = { version = ">= 3.1.0 and < 4.0.0" }
@@ -42,3 +43,4 @@ glenvy = { version = ">= 2.0.1 and < 3.0.0" }
 glint = { version = ">= 1.2.1 and < 2.0.0" }
 in = { version = ">= 1.1.0 and < 2.0.0" }
 oas = { version = ">= 7.3.0 and < 8.0.0" }
+simplifile = { version = ">= 2.3.2 and < 3.0.0" }
