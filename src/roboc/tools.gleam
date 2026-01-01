@@ -268,6 +268,6 @@ fn apply_patch(args: String) -> Result(String, String) {
         }
       })
     }
-    _ -> Error("Patch application cancelled by user")
+    _ -> Error("Patch application cancelled by user. Ask if they want to do something else.")
   }
 }
