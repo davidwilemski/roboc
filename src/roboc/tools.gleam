@@ -97,7 +97,7 @@ pub fn find_files_tool() -> client.Tool {
 }
 
 type GrepFiles {
-  GrepFiles(pattern: String, context: Option(Int))
+  GrepFiles(pattern: String, context: Option(Int), case_insensitive: Option(Bool))
 }
 
 fn grep_files_decoder() -> decode.Decoder(GrepFiles) {
@@ -107,7 +107,12 @@ fn grep_files_decoder() -> decode.Decoder(GrepFiles) {
     None,
     decode.optional(decode.int),
   )
-  decode.success(GrepFiles(pattern:, context:))
+  use case_insensitive <- decode.optional_field(
+    "case_insensitive",
+    None,
+    decode.optional(decode.bool),
+  )
+  decode.success(GrepFiles(pattern:, context:, case_insensitive:))
 }
 
 fn grep_files(args: String) -> Result(String, String) {
@@ -115,6 +120,11 @@ fn grep_files(args: String) -> Result(String, String) {
   |> result.map_error(fn(e) { string.inspect(e) })
   |> result.try(fn(grep) {
     let cmd = child_process.new_with_path("rg")
+
+    let cmd = case grep.case_insensitive {
+      Some(True) -> child_process.arg(cmd, "-i")
+      _ -> cmd
+    }
 
     case grep.context {
       Some(context_lines) ->
@@ -161,6 +171,7 @@ pub fn grep_files_tool() -> client.Tool {
             ),
           ),
           json_schema.optional_field("context", json_schema.integer()),
+          json_schema.optional_field("case_insensitive", json_schema.boolean()),
         ]),
       ),
     ),
