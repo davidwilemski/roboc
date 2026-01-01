@@ -41,8 +41,12 @@ type FindFiles {
 }
 
 fn find_files_decoder() -> decode.Decoder(FindFiles) {
-  use dir <- decode.field("dir", decode.optional(decode.string))
-  use pattern <- decode.field("pattern", decode.optional(decode.string))
+  use dir <- decode.optional_field("dir", None, decode.optional(decode.string))
+  use pattern <- decode.optional_field(
+    "pattern",
+    None,
+    decode.optional(decode.string),
+  )
   decode.success(FindFiles(dir:, pattern:))
 }
 
@@ -97,7 +101,11 @@ pub fn find_files_tool() -> client.Tool {
 }
 
 type GrepFiles {
-  GrepFiles(pattern: String, context: Option(Int), case_insensitive: Option(Bool))
+  GrepFiles(
+    pattern: String,
+    context: Option(Int),
+    case_insensitive: Option(Bool),
+  )
 }
 
 fn grep_files_decoder() -> decode.Decoder(GrepFiles) {

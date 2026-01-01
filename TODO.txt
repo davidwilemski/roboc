@@ -1,12 +1,5 @@
 Things to work on in future:
 
-##find_file bug:
-calling tool: find_files with args: {"pattern": "tools\\.gleam$"}
-Error in tool call: UnableToDecode([DecodeError("Field", "Nothing", ["dir"])])
-
-We need to make the dir field an optional_field I believe.
-
-
 ##token count feature:
 Add cumulative token (input/output/total) tracking over the session.
 We already show token use per api call but could be good to also track over the session too.
