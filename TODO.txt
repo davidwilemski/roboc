@@ -1,0 +1,26 @@
+Things to work on in future:
+
+##find_file bug:
+calling tool: find_files with args: {"pattern": "tools\\.gleam$"}
+Error in tool call: UnableToDecode([DecodeError("Field", "Nothing", ["dir"])])
+
+We need to make the dir field an optional_field I believe.
+
+
+##token count feature:
+Add cumulative token (input/output/total) tracking over the session.
+We already show token use per api call but could be good to also track over the session too.
+
+## session logging feature:
+Log session (context, tokens, etc) to a file. Perhaps as a flag on the command
+(or default behavior that can be turned off).
+
+## retry request on request error:
+
+We sometimes see roboc exit when a request fails, like this:
+
+Great! Let me re-read and verify Step 2 is complete:
+calling tool: grep_files with args: {"pattern": "fn grep_files_decoder", "context": 12}
+Request error: error making request
+
+We should both try to log more diagnostics for when this happens and add a retry or two before giving up.
