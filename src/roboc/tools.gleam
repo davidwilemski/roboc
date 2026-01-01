@@ -20,6 +20,7 @@ import simplifile
 pub fn handle_tool(tool: types.ToolCall) -> Result(String, String) {
   case tool.name {
     "find_files" -> find_files(tool.arguments)
+    "grep_files" -> grep_files(tool.arguments)
     "read_files" -> read_files(tool.arguments)
     "apply_patch" -> apply_patch(tool.arguments)
     _ -> Error("unknown tool name")
@@ -29,6 +30,7 @@ pub fn handle_tool(tool: types.ToolCall) -> Result(String, String) {
 pub fn all_tools() -> List(Tool) {
   [
     find_files_tool(),
+    grep_files_tool(),
     read_files_tool(),
     apply_patch_tool(),
   ]
@@ -87,6 +89,78 @@ pub fn find_files_tool() -> client.Tool {
               deprecated: False,
             ),
           ),
+        ]),
+      ),
+    ),
+    strict: None,
+  )
+}
+
+type GrepFiles {
+  GrepFiles(pattern: String, context: Option(Int))
+}
+
+fn grep_files_decoder() -> decode.Decoder(GrepFiles) {
+  use pattern <- decode.field("pattern", decode.string)
+  use context <- decode.optional_field(
+    "context",
+    None,
+    decode.optional(decode.int),
+  )
+  decode.success(GrepFiles(pattern:, context:))
+}
+
+fn grep_files(args: String) -> Result(String, String) {
+  json.parse(args, grep_files_decoder())
+  |> result.map_error(fn(e) { string.inspect(e) })
+  |> result.try(fn(grep) {
+    let cmd = child_process.new_with_path("rg")
+
+    case grep.context {
+      Some(context_lines) ->
+        cmd
+        |> child_process.arg("-C")
+        |> child_process.arg(int.to_string(context_lines))
+      None -> cmd
+    }
+    |> child_process.arg("--color=never")
+    |> child_process.arg(grep.pattern)
+    |> child_process.arg(".")
+    |> child_process.run
+    |> result.map_error(fn(e) { string.inspect(e) })
+  })
+  |> result.try(fn(output) {
+    case output.status_code {
+      0 -> Ok(output.output)
+      1 -> Ok("No matches found")
+      _ -> Error(output.output)
+    }
+  })
+}
+
+pub fn grep_files_tool() -> client.Tool {
+  Function(
+    name: "grep_files",
+    description: Some(
+      "Search for a pattern in files using ripgrep. Returns matching lines with optional context.",
+    ),
+    parameters: Some(
+      json_schema.encode(
+        json_schema.object([
+          json_schema.field(
+            "pattern",
+            json_schema.String(
+              max_length: None,
+              min_length: None,
+              pattern: None,
+              format: None,
+              nullable: False,
+              title: Some("pattern"),
+              description: Some("Regular expression pattern to search for"),
+              deprecated: False,
+            ),
+          ),
+          json_schema.optional_field("context", json_schema.integer()),
         ]),
       ),
     ),
@@ -268,6 +342,9 @@ fn apply_patch(args: String) -> Result(String, String) {
         }
       })
     }
-    _ -> Error("Patch application cancelled by user. Ask if they want to do something else.")
+    _ ->
+      Error(
+        "Patch application cancelled by user. Ask if they want to do something else.",
+      )
   }
 }
