@@ -36,5 +36,5 @@ DecodeError(expected: Field, found: Nothing path: usage)
 When overwriting an existing file, show a diff of old vs new content instead of
 just showing the new content. This would make review easier for the user.
 
-## append feature plan
-see plans/append_feature_plan.txt
+## customizable system prompt
+Allow users to customize the system prompt sent to the LLM.

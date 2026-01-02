@@ -371,13 +371,18 @@ fn apply_patch(args: String) -> Result(String, String) {
 }
 
 type WriteFile {
-  WriteFile(path: String, content: String)
+  WriteFile(path: String, content: String, append: Option(Bool))
 }
 
 fn write_file_decoder() -> decode.Decoder(WriteFile) {
   use path <- decode.field("path", decode.string)
   use content <- decode.field("content", decode.string)
-  decode.success(WriteFile(path:, content:))
+  use append <- decode.optional_field(
+    "append",
+    None,
+    decode.optional(decode.bool),
+  )
+  decode.success(WriteFile(path:, content:, append:))
 }
 
 pub fn write_file_tool() -> client.Tool {
@@ -385,7 +390,7 @@ pub fn write_file_tool() -> client.Tool {
     name: "write_file",
     description: Some(
       "Write content to a file. Creates the file if it doesn't exist, or overwrites if it does. "
-      <> "User will be prompted to approve the write before it is executed.",
+      <> "Set append to true to append to the file instead. User will be prompted to approve the write before it is executed.",
     ),
     parameters: Some(
       json_schema.encode(
@@ -406,6 +411,7 @@ pub fn write_file_tool() -> client.Tool {
             ),
           ),
           json_schema.field("content", json_schema.string()),
+          json_schema.optional_field("append", json_schema.boolean()),
         ]),
       ),
     ),
@@ -455,14 +461,22 @@ fn write_file(args: String) -> Result(String, String) {
     ),
   )
 
+  let should_append = option.unwrap(write_data.append, False)
+
   // Check if file exists for the prompt message
   let file_exists = simplifile.is_file(path)
-  use <- bool.guard(result.is_error(file_exists), Error("Error: failed to confirm file existence. Check permissions on file path."))
+  use <- bool.guard(
+    result.is_error(file_exists),
+    Error(
+      "Error: failed to confirm file existence. Check permissions on file path.",
+    ),
+  )
 
   let assert Ok(file_exists) = file_exists as "result checked with guard"
-  let action_description = case file_exists {
-    True -> "OVERWRITE existing file"
-    False -> "CREATE new file"
+  let action_description = case file_exists, should_append {
+    True, True -> "APPEND to existing file"
+    True, False -> "OVERWRITE existing file"
+    False, _ -> "CREATE new file"
   }
 
   // Display the proposed write to the user
@@ -483,7 +497,12 @@ fn write_file(args: String) -> Result(String, String) {
 
   case string.trim(approval) |> string.lowercase {
     "y" | "yes" -> {
-      case simplifile.write(path, write_data.content) {
+      let write_result = case should_append {
+        True -> simplifile.append(path, write_data.content)
+        False -> simplifile.write(path, write_data.content)
+      }
+
+      case write_result {
         Ok(_) -> Ok("File written successfully: " <> path)
         Error(e) ->
           Error("Failed to write file '" <> path <> "': " <> string.inspect(e))
