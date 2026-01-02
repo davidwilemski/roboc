@@ -17,3 +17,17 @@ calling tool: grep_files with args: {"pattern": "fn grep_files_decoder", "contex
 Request error: error making request
 
 We should both try to log more diagnostics for when this happens and add a retry or two before giving up.
+
+## need more credits on provider
+If running low on credits, we will get a message like the below. We should handle it and display an appropriate error. 
+{"error":{"message":"This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, but can only afford 27226. To increase, visit https://openrouter.ai/settings/keys and create a key with a higher total limit","code":402,"metadata":{"provider_name":null}},"user_id":"user_37XVcKibziPjfjRPbI10JUKUlLR"}
+
+Right now we get a decoding error as we don't properly handle the http status code and go right to decoding the body.
+
+json response decode error: DecodeError(expected: Field, found: Nothing path: id)
+DecodeError(expected: Field, found: Nothing path: provider)
+DecodeError(expected: Field, found: Nothing path: model)
+DecodeError(expected: Field, found: Nothing path: object)
+DecodeError(expected: Field, found: Nothing path: created)
+DecodeError(expected: Field, found: Nothing path: choices)
+DecodeError(expected: Field, found: Nothing path: usage)
