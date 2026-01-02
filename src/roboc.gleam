@@ -103,13 +103,22 @@ fn handle_tool_calls(tool_calls: List(types.ToolCall)) -> List(context.Message) 
 
 fn roboc() -> glint.Command(Nil) {
   use <- glint.command_help("Runs basic roboc agent")
-  use _, _, _ <- glint.command()
+  use model <- glint.flag(
+    glint.string_flag("model")
+    |> glint.flag_default("anthropic/claude-sonnet-4.5")
+    |> glint.flag_help(
+      "Which model to use on the provider. Defaults to anthropic/claude-sonnet-4.5.",
+    ),
+  )
+
+  use _, _, flags <- glint.command()
+  let assert Ok(selected_model) = model(flags) as "model has default"
 
   case get_api_key() {
     Ok(key) -> {
       io.println("Hello from roboc!")
 
-      let client = client.new(key)
+      let client = client.new(key, selected_model)
       let init_ctx = context.new()
 
       case agent_loop(client, init_ctx) {
