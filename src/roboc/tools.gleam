@@ -23,6 +23,7 @@ pub fn handle_tool(tool: types.ToolCall) -> Result(String, String) {
     "grep_files" -> grep_files(tool.arguments)
     "read_files" -> read_files(tool.arguments)
     "apply_patch" -> apply_patch(tool.arguments)
+    "write_file" -> write_file(tool.arguments)
     _ -> Error("unknown tool name")
   }
 }
@@ -33,6 +34,7 @@ pub fn all_tools() -> List(Tool) {
     grep_files_tool(),
     read_files_tool(),
     apply_patch_tool(),
+    write_file_tool(),
   ]
 }
 
@@ -364,6 +366,132 @@ fn apply_patch(args: String) -> Result(String, String) {
     _ ->
       Error(
         "Patch application cancelled by user. Ask if they want to do something else.",
+      )
+  }
+}
+
+type WriteFile {
+  WriteFile(path: String, content: String)
+}
+
+fn write_file_decoder() -> decode.Decoder(WriteFile) {
+  use path <- decode.field("path", decode.string)
+  use content <- decode.field("content", decode.string)
+  decode.success(WriteFile(path:, content:))
+}
+
+pub fn write_file_tool() -> client.Tool {
+  Function(
+    name: "write_file",
+    description: Some(
+      "Write content to a file. Creates the file if it doesn't exist, or overwrites if it does. "
+      <> "User will be prompted to approve the write before it is executed.",
+    ),
+    parameters: Some(
+      json_schema.encode(
+        json_schema.object([
+          json_schema.field(
+            "path",
+            json_schema.String(
+              max_length: None,
+              min_length: None,
+              pattern: None,
+              format: None,
+              nullable: False,
+              title: Some("path"),
+              description: Some(
+                "File path to write to. Must be a relative path in or below the current directory.",
+              ),
+              deprecated: False,
+            ),
+          ),
+          json_schema.field("content", json_schema.string()),
+        ]),
+      ),
+    ),
+    strict: None,
+  )
+}
+
+fn write_file(args: String) -> Result(String, String) {
+  // Get cwd for security validation
+  use cwd <- result.try(
+    files.get_cwd()
+    |> result.map_error(fn(e) {
+      "Failed to determine current working directory. Cowardly refusing to write file. get_cwd() returned error"
+      <> e
+    }),
+  )
+
+  // Parse arguments
+  use write_data <- result.try(
+    json.parse(args, write_file_decoder())
+    |> result.map_error(fn(e) { string.inspect(e) }),
+  )
+
+  let path = write_data.path
+
+  // Security checks (same as read_files)
+  let absolute_path = filepath.expand(path)
+  let contains_upward_dir_traversal = string.contains(path, "..")
+
+  use <- bool.guard(
+    contains_upward_dir_traversal,
+    Error("Error: Refusing to write above current directory"),
+  )
+
+  use abs_path <- result.try(
+    absolute_path
+    |> result.map_error(fn(_) {
+      "Error expanding path for file write. Potentially expands above current directory: "
+      <> path
+    }),
+  )
+
+  use <- bool.guard(
+    filepath.is_absolute(path) && !string.starts_with(abs_path, cwd),
+    Error(
+      "Error: File write path is not in current working directory, refusing to write",
+    ),
+  )
+
+  // Check if file exists for the prompt message
+  let file_exists = simplifile.is_file(path)
+  use <- bool.guard(result.is_error(file_exists), Error("Error: failed to confirm file existence. Check permissions on file path."))
+
+  let assert Ok(file_exists) = file_exists as "result checked with guard"
+  let action_description = case file_exists {
+    True -> "OVERWRITE existing file"
+    False -> "CREATE new file"
+  }
+
+  // Display the proposed write to the user
+  io.println("\n=== Proposed File Write ===")
+  io.println("Action: " <> action_description)
+  io.println("Path: " <> path)
+  io.println("--- Content ---")
+  io.println(write_data.content)
+  io.println("--- End Content ---")
+  io.println("===============================\n")
+  io.print("Write this file? (y/n): ")
+
+  // Get user approval
+  use approval <- result.try(
+    in.read_line()
+    |> result.map_error(fn(_) { "Failed to read user input" }),
+  )
+
+  case string.trim(approval) |> string.lowercase {
+    "y" | "yes" -> {
+      case simplifile.write(path, write_data.content) {
+        Ok(_) -> Ok("File written successfully: " <> path)
+        Error(e) ->
+          Error("Failed to write file '" <> path <> "': " <> string.inspect(e))
+      }
+    }
+    _ ->
+      Error(
+        "File write cancelled by user. Ask if they want to do something else.",
       )
   }
 }

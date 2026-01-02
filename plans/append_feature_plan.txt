@@ -1,0 +1,73 @@
+Plan for Implementing Append Option on Write File Tool
+========================================================
+
+Overview
+--------
+Add an optional 'append' parameter to the write_file tool that allows appending
+content to the end of an existing file instead of overwriting it.
+
+Feature Specification
+--------------------
+- Parameter name: "append"
+- Type: boolean
+- Default value: false (maintains backward compatibility)
+- Behavior:
+  * When append=false (default): Overwrites file content (current behavior)
+  * When append=true: Appends content to end of existing file
+  * If file doesn't exist: Creates new file regardless of append value
+
+Implementation Details
+----------------------
+
+1. Function Schema Updates
+   - Add 'append' to the properties object in the function definition
+   - Mark as optional (not in required array)
+   - Set deprecated: false, nullable: false, type: "boolean"
+   - Add description explaining the append behavior
+
+2. Code Changes
+   - Modify file writing logic to check the append parameter
+   - If append=true and file exists:
+     * Open file in append mode ('a' or equivalent)
+     * Write content to end of file
+   - If append=false or file doesn't exist:
+     * Use current overwrite behavior ('w' mode)
+
+3. User Confirmation Flow
+   - Update confirmation prompt to indicate append vs overwrite
+   - Example messages:
+     * "Append to file: path/to/file"
+     * "Overwrite file: path/to/file" (or "Create file:" if new)
+
+4. Edge Cases to Handle
+   - File doesn't exist: Create new file (same as overwrite)
+   - File exists but is empty: Append still works, just adds to empty file
+   - Permission errors: Handle same as current implementation
+   - Binary vs text files: Ensure append works correctly for text content
+
+5. Testing Scenarios
+   - Append to existing file with content
+   - Append to non-existent file (should create)
+   - Append to empty file
+   - Overwrite with append=false (verify no regression)
+   - Default behavior without append parameter (verify backward compatibility)
+   - Multiple sequential appends to same file
+
+Documentation Updates
+---------------------
+- Update function description to mention append capability
+- Add examples showing both append and overwrite usage
+- Note that append mode does not add newlines automatically
+  (user should include them in content if needed)
+
+Backward Compatibility
+----------------------
+- Default value of false ensures existing code continues to work
+- No breaking changes to current API
+- Optional parameter means no changes needed to existing calls
+
+Future Considerations
+---------------------
+- Could add a "insert_at" parameter for inserting at specific positions
+- Could add a "newline_before" option to automatically add newline when appending
+- Could add a "create_backup" option before overwrite/append operations

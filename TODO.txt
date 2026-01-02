@@ -31,3 +31,10 @@ DecodeError(expected: Field, found: Nothing path: object)
 DecodeError(expected: Field, found: Nothing path: created)
 DecodeError(expected: Field, found: Nothing path: choices)
 DecodeError(expected: Field, found: Nothing path: usage)
+
+## write_file tool improvements
+When overwriting an existing file, show a diff of old vs new content instead of
+just showing the new content. This would make review easier for the user.
+
+## append feature plan
+see plans/append_feature_plan.txt
