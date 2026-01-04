@@ -25,7 +25,12 @@ pub type Tool {
   )
 }
 
-pub fn new(api_key: String, timeout: Int, model: String, tools: List(Tool)) -> Client {
+pub fn new(
+  api_key: String,
+  timeout: Int,
+  model: String,
+  tools: List(Tool),
+) -> Client {
   Client(api_key, timeout, model, tools)
 }
 
@@ -50,8 +55,7 @@ pub fn chat(
 
   let configuration =
     httpc.configure()
-  |> httpc.timeout(client.timeout * 1000)
-
+    |> httpc.timeout(client.timeout * 1000)
 
   // Create and send the request
   request.new()

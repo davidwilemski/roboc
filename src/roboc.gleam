@@ -120,7 +120,7 @@ fn roboc() -> glint.Command(Nil) {
 
   use _, _, flags <- glint.command()
   let assert Ok(selected_model) = model(flags) as "model has default"
-  let assert Ok(timeout)  = request_timeout(flags) as "timeout has default"
+  let assert Ok(timeout) = request_timeout(flags) as "timeout has default"
 
   case get_api_key() {
     Ok(key) -> {
