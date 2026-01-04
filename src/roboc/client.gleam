@@ -33,9 +33,9 @@ pub type ClientError {
   ClientError(reason: String)
 }
 
-pub fn new(key: String, model: String) -> Client {
+pub fn new(key: String, timeout: Int, model: String) -> Client {
   // TODO allow system prompt
-  Client(client.new(key, model, tools.all_tools()))
+  Client(client.new(key, timeout, model, tools.all_tools()))
 }
 
 pub fn send(client: Client, ctx: context.Context) -> Result(Response, String) {

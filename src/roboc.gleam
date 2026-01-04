@@ -110,15 +110,23 @@ fn roboc() -> glint.Command(Nil) {
       "Which model to use on the provider. Defaults to anthropic/claude-sonnet-4.5.",
     ),
   )
+  use request_timeout <- glint.flag(
+    glint.int_flag("timeout")
+    |> glint.flag_default(60)
+    |> glint.flag_help(
+      "How long (in seconds) to set the default timeout on requests to the LLM API",
+    ),
+  )
 
   use _, _, flags <- glint.command()
   let assert Ok(selected_model) = model(flags) as "model has default"
+  let assert Ok(timeout)  = request_timeout(flags) as "timeout has default"
 
   case get_api_key() {
     Ok(key) -> {
       io.println("Hello from roboc!")
 
-      let client = client.new(key, selected_model)
+      let client = client.new(key, timeout, selected_model)
       let init_ctx = context.new()
 
       case agent_loop(client, init_ctx) {

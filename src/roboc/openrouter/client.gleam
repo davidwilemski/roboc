@@ -10,7 +10,7 @@ import roboc/context
 import roboc/openrouter/types
 
 pub type Client {
-  Client(api_key: String, model: String, tools: List(Tool))
+  Client(api_key: String, timeout: Int, model: String, tools: List(Tool))
 }
 
 pub type Tool {
@@ -25,8 +25,8 @@ pub type Tool {
   )
 }
 
-pub fn new(api_key: String, model: String, tools: List(Tool)) -> Client {
-  Client(api_key, model, tools)
+pub fn new(api_key: String, timeout: Int, model: String, tools: List(Tool)) -> Client {
+  Client(api_key, timeout, model, tools)
 }
 
 pub fn chat(
@@ -48,6 +48,11 @@ pub fn chat(
     ])
     |> json.to_string
 
+  let configuration =
+    httpc.configure()
+  |> httpc.timeout(client.timeout * 1000)
+
+
   // Create and send the request
   request.new()
   |> request.set_method(http.Post)
@@ -56,7 +61,7 @@ pub fn chat(
   |> request.set_header("authorization", "Bearer " <> client.api_key)
   |> request.set_header("content-type", "application/json")
   |> request.set_body(body)
-  |> httpc.send
+  |> httpc.dispatch(configuration, _)
   // TODO handle https://hexdocs.pm/gleam_httpc/gleam/httpc.html#HttpError
   |> result.map_error(fn(_) { types.HttpRequestError("error making request") })
   |> result.try(fn(response) { types.decode_openrouter_response(response.body) })
