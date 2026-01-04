@@ -1,4 +1,3 @@
-import roboc/tools/grep_files
 import child_process
 import filepath
 import gleam/bool
@@ -17,6 +16,7 @@ import roboc/files
 import roboc/openrouter/client.{type Tool, Function}
 import roboc/openrouter/types
 import roboc/tools/find_files
+import roboc/tools/grep_files
 import simplifile
 
 pub fn handle_tool(tool: types.ToolCall) -> Result(String, String) {
