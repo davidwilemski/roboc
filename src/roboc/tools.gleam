@@ -61,10 +61,7 @@ fn summarize_write_file(args: String) -> String {
 fn summarize_replace_text(args: String) -> String {
   // Note: We'd need access to replace_text decoder or parse manually
   // For now, just indicate it's a text replacement
-  case string.length(args) {
-    n if n > 200 -> "(" <> int.to_string(n) <> " chars of replacement data)"
-    _ -> "with args: " <> args
-  }
+  "(" <> int.to_string(string.length(args)) <> " chars of replacement data)"
 }
 
 fn summarize_read_files(args: String) -> String {
