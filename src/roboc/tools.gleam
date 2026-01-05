@@ -10,6 +10,7 @@ import gleam/result
 import gleam/string
 import in
 import oas/json_schema
+import roboc/diff
 import roboc/files
 import roboc/openrouter/client.{type Tool, Function}
 import roboc/openrouter/types
@@ -52,7 +53,13 @@ fn summarize_write_file(args: String) -> String {
         _ -> "write"
       }
       let content_len = string.length(data.content)
-      "(" <> action <> " " <> data.path <> ", " <> int.to_string(content_len) <> " chars)"
+      "("
+      <> action
+      <> " "
+      <> data.path
+      <> ", "
+      <> int.to_string(content_len)
+      <> " chars)"
     }
     Error(_) -> "(failed to parse args)"
   }
@@ -274,9 +281,43 @@ fn write_file(args: String) -> Result(String, String) {
   io.println("\n=== Proposed File Write ===")
   io.println("Action: " <> action_description)
   io.println("Path: " <> path)
-  io.println("--- Content ---")
-  io.println(write_data.content)
-  io.println("--- End Content ---")
+
+  // For overwrites, show a diff instead of full content
+  case file_exists, should_append {
+    True, False -> {
+      // Read existing content and show diff
+      case simplifile.read(path) {
+        Ok(old_content) -> {
+          case diff.unified_diff(old_content, write_data.content) {
+            Ok(diff_output) -> {
+              io.println("--- Diff ---")
+              io.println(diff_output)
+              io.println("--- End Diff ---")
+            }
+            Error(_) -> {
+              // Fallback to showing new content if diff fails
+              io.println("--- New Content ---")
+              io.println(write_data.content)
+              io.println("--- End Content ---")
+            }
+          }
+        }
+        Error(_) -> {
+          // If we can't read the file, just show new content
+          io.println("--- New Content ---")
+          io.println(write_data.content)
+          io.println("--- End Content ---")
+        }
+      }
+    }
+    _, _ -> {
+      // For new files or appends, show the content
+      io.println("--- Content ---")
+      io.println(write_data.content)
+      io.println("--- End Content ---")
+    }
+  }
+
   io.println("===============================\n")
   io.print("Write this file? (y/n): ")
 
