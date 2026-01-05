@@ -6,9 +6,9 @@ import gleam/result
 import gleam/string
 import glenvy/env
 import glint
-import in
 import roboc/client
 import roboc/context.{AssistantMsg, UserMsg}
+import roboc/io as roboc_io
 import roboc/openrouter/types
 import roboc/tools
 
@@ -46,9 +46,7 @@ fn agent_loop(
         }
       }
     }
-    Error(_) -> {
-      Error("")
-    }
+    Error(e) -> Error(e)
   }
 }
 
@@ -169,9 +167,9 @@ fn read_lines() -> Result(String, String) {
 }
 
 fn read_lines_internal(lines: List(String)) -> Result(List(String), String) {
-  case in.read_line() {
+  case roboc_io.read_line() {
     Ok(line) if line == "\n" -> Ok(lines)
     Ok(line) -> read_lines_internal(list.append(lines, [line]))
-    Error(e) -> Error(string.inspect(e))
+    Error(_) -> Error("Failed to read input (EOF or error)")
   }
 }

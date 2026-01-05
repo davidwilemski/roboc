@@ -8,10 +8,10 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import in
 import oas/json_schema
 import roboc/diff
 import roboc/files
+import roboc/io as roboc_io
 import roboc/openrouter/client.{type Tool, Function}
 import roboc/openrouter/types
 import roboc/tools/find_files
@@ -323,7 +323,7 @@ fn write_file(args: String) -> Result(String, String) {
 
   // Get user approval
   use approval <- result.try(
-    in.read_line()
+    roboc_io.read_line()
     |> result.map_error(fn(_) { "Failed to read user input" }),
   )
 
