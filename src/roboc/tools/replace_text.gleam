@@ -230,6 +230,24 @@ fn apply_replacements(preview_results: List(PreviewResult)) -> Result(String, St
   }
 }
 
+pub fn summarize(args: String) -> String {
+  case json.parse(args, decoder()) {
+    Ok(data) -> {
+      let replacement_count = list.length(data.replacements)
+      case replacement_count {
+        1 -> {
+          case list.first(data.replacements) {
+            Ok(r) -> "(" <> r.path <> ")"
+            Error(_) -> "(1 replacement)"
+          }
+        }
+        n -> "(" <> int.to_string(n) <> " replacements)"
+      }
+    }
+    Error(_) -> "(failed to parse args)"
+  }
+}
+
 pub fn tool() -> client.Tool {
   Function(
     name: "replace_text",

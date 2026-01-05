@@ -34,7 +34,7 @@ pub fn handle_tool(tool: types.ToolCall) -> Result(String, String) {
 pub fn summarize_tool_call(tool_name: String, args: String) -> String {
   case tool_name {
     "write_file" -> summarize_write_file(args)
-    "replace_text" -> summarize_replace_text(args)
+    "replace_text" -> replace_text.summarize(args)
     "read_files" -> summarize_read_files(args)
     "grep_files" | "find_files" -> {
       // These typically have small args, show them
@@ -56,12 +56,6 @@ fn summarize_write_file(args: String) -> String {
     }
     Error(_) -> "(failed to parse args)"
   }
-}
-
-fn summarize_replace_text(args: String) -> String {
-  // Note: We'd need access to replace_text decoder or parse manually
-  // For now, just indicate it's a text replacement
-  "(" <> int.to_string(string.length(args)) <> " chars of replacement data)"
 }
 
 fn summarize_read_files(args: String) -> String {
