@@ -87,9 +87,7 @@ fn tools_loop(
 // for each tool call identify the matching tool, if any, and call the handler for it. Build a ToolCallMsg in response
 fn handle_tool_calls(tool_calls: List(types.ToolCall)) -> List(context.Message) {
   list.map(tool_calls, fn(t) {
-    io.println_error(
-      "calling tool: " <> t.name <> " with args: " <> t.arguments,
-    )
+    io.println_error("calling tool: " <> format_tool_call(t))
     let content = case tools.handle_tool(t) {
       Ok(c) -> c
       Error(e) -> {
@@ -99,6 +97,12 @@ fn handle_tool_calls(tool_calls: List(types.ToolCall)) -> List(context.Message) 
     }
     context.ToolRespMsg(content:, tool_call_id: t.id)
   })
+}
+
+// Format tool call for logging - show useful info without dumping large params
+fn format_tool_call(tool: types.ToolCall) -> String {
+  let summary = tools.summarize_tool_call(tool.name, tool.arguments)
+  tool.name <> " " <> summary
 }
 
 fn roboc() -> glint.Command(Nil) {
