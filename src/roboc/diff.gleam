@@ -6,6 +6,7 @@ import temporary
 
 /// Generate a unified diff between old and new content using git diff
 pub fn unified_diff(
+  filename: String,
   old_content: String,
   new_content: String,
 ) -> Result(String, String) {
@@ -33,7 +34,12 @@ pub fn unified_diff(
       Ok(output) -> {
         // git diff returns exit code 1 when there are differences, 0 when identical
         // We want the stdout in either case
-        Ok(output.output)
+        // Replace temp paths with simple filenames
+        let cleaned_output =
+          output.output
+          |> string.replace(old_file, "/" <> filename)
+          |> string.replace(new_file, "/" <> filename)
+        Ok(cleaned_output)
       }
       Error(e) ->
         Error(

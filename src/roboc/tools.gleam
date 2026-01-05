@@ -288,7 +288,7 @@ fn write_file(args: String) -> Result(String, String) {
       // Read existing content and show diff
       case simplifile.read(path) {
         Ok(old_content) -> {
-          case diff.unified_diff(old_content, write_data.content) {
+          case diff.unified_diff(path, old_content, write_data.content) {
             Ok(diff_output) -> {
               io.println("--- Diff ---")
               io.println(diff_output)

@@ -173,7 +173,7 @@ fn display_preview(preview_results: List(PreviewResult)) -> Nil {
         io.println("✓ Found text to replace")
 
         // Show diff of the entire file
-        case diff.unified_diff(preview.file_content, preview.new_content) {
+        case diff.unified_diff(preview.replacement.path, preview.file_content, preview.new_content) {
           Ok(diff_output) -> {
             io.println(diff_output)
           }
