@@ -2,7 +2,7 @@
 
 A just for fun personal LLM coding agent
 
-**Note: This isn't intended for widespread use. I developed it for fun as a first Gleam project and to experiment with the LLM APIs. It's not meant to be "production grade" and while I was cautious about destructive operations, I make no guarantees on its safety or operation.**
+**Note: This isn't intended for widespread use. I [developed it for fun as a first Gleam project and to experiment with the LLM APIs](https://www.davidwilemski.com/what-i-learned-from-writing-a-basic-coding-agent). It's not meant to be "production grade" and while I was cautious about destructive operations, I make no guarantees on its safety or operation.**
 
 ## Features
 
