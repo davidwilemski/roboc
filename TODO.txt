@@ -34,3 +34,9 @@ DecodeError(expected: Field, found: Nothing path: usage)
 
 ## customizable system prompt
 Allow users to customize the system prompt sent to the LLM.
+
+## emoji in pasted input causes silent exit
+When a user pastes input containing emojis (e.g., during the replace_text tool approval prompt where the diff shows "✓ Found text to replace"), the program silently exits without error messages. This likely occurs in the read_lines() / read_lines_internal() functions in src/roboc.gleam when calling in.read_line(). We should:
+- Debug why emoji input causes the program to exit
+- Add proper error handling for unicode/emoji characters in input
+- Ensure error messages are displayed rather than silently exiting
