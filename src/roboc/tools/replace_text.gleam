@@ -249,11 +249,29 @@ pub fn summarize(args: String) -> String {
 }
 
 pub fn tool() -> client.Tool {
+  // Tool description approach adapted from Cline's replace_in_file tool
+  // https://github.com/cline/cline/blob/0d04205dc4194c54e4bf424d2dc80f2fe1697e98/src/core/prompts/system-prompt/tools/replace_in_file.ts#L8C1-L52C2
   Function(
     name: "replace_text",
     description: Some(
       "Replace specific text in one or more files. Each replacement finds the first occurrence of old_text and replaces it with new_text. "
-      <> "User will be prompted to approve all replacements before they are applied.",
+      <> "User will be prompted to approve all replacements before they are applied.\n\n"
+      <> "Critical rules for old_text matching:\n"
+      <> "1. old_text must match the file content EXACTLY:\n"
+      <> "   - Match character-for-character including all whitespace, indentation, and line endings\n"
+      <> "   - Include all comments, docstrings, etc.\n"
+      <> "   - Each line must be complete - never truncate lines mid-way as this causes matching failures\n"
+      <> "2. Only the FIRST match occurrence will be replaced:\n"
+      <> "   - Use multiple replacement objects to make multiple changes\n"
+      <> "   - Include just enough lines in old_text to uniquely match the section to change\n"
+      <> "   - List multiple replacements in the order they appear in the file\n"
+      <> "3. Keep replacements concise:\n"
+      <> "   - Break large changes into smaller, focused replacements\n"
+      <> "   - Include only the changing lines plus a few surrounding lines if needed for uniqueness\n"
+      <> "   - Avoid long runs of unchanging lines\n"
+      <> "4. Special operations:\n"
+      <> "   - To delete code: Use empty string for new_text\n"
+      <> "   - To move code: Use two replacements (one to delete from original location, one to insert at new location)",
     ),
     parameters: Some(
       json_schema.encode(
